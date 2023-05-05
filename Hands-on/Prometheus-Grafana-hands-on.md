@@ -543,7 +543,7 @@ sudo service prometheus restart
 
 ### Step 1: As pre-requisites install docker and docker-compose on the server using below commands:
 
-# Use below command to install docker and docker-compose
+_Use below command to install docker and docker-compose_
 
 ```
 curl -fsSL get.docker.com -o get-docker.sh
@@ -637,7 +637,7 @@ curl localhost:8000/
 flask_request_count
 flask_request_latency_seconds_sum
 flask_request_latency_seconds_count
-`
+```
 
 ![image](https://user-images.githubusercontent.com/37858762/236436957-6adf8b29-5874-409f-a2a1-8814c1cfc625.png)
 
