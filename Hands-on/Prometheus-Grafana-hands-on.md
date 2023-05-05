@@ -545,9 +545,7 @@ sudo service prometheus restart
 
 # Use below command to install docker and docker-compose
 
-``
-# Use below command to install docker and docker-compose
-
+```
 curl -fsSL get.docker.com -o get-docker.sh
 
 sudo sh get-docker.sh
@@ -556,6 +554,7 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-c
 
 sudo chmod +x /usr/local/bin/docker-compose
 ```
+
 ### Step 2: Verify if docker and docker-compose installed successfully:
   
 ![image](https://user-images.githubusercontent.com/37858762/236437585-de086ae8-0e67-42f0-9140-3ecc8989ddd6.png)
