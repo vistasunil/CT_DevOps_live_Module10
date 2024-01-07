@@ -685,7 +685,7 @@ datasources:
    isDefault: true
 ```
 
-### Step 6: Create file **/etc/grafana/provisioning/dashboards/dashboards.** yaml with below data to add dashboards to Grafana. Here /var/lib/grafana/dashboards path will be used to place multiple dashboards yaml files and Grafana can add all of them to show dashboards:
+### Step 6: Create file **/etc/grafana/provisioning/dashboards/dashboards.yaml** with below data to add dashboards to Grafana. Here /var/lib/grafana/dashboards path will be used to place multiple dashboards yaml files and Grafana can add all of them to show dashboards:
 
 ```
 apiVersion: 1
