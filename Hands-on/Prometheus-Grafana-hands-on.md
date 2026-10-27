@@ -31,7 +31,7 @@ Refer [**https://github.com/vistasunil/prometheus-grafanna.git**](https://github
 ```
 sudo apt update
 
-PROMETHEUS_VERSION="2.40.5"
+PROMETHEUS_VERSION="3.5.0"
 
 wget https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz
 
@@ -71,15 +71,9 @@ sudo chown prometheus:prometheus /usr/local/bin/promtool
 
 # copy config
 
-sudo cp -r consoles /etc/prometheus
-
-sudo cp -r console_libraries /etc/prometheus
-
 sudo cp prometheus.yml /etc/prometheus/prometheus.yml
 
-sudo chown -R prometheus:prometheus /etc/prometheus/consoles
-
-sudo chown -R prometheus:prometheus /etc/prometheus/console_libraries
+sudo chown prometheus:prometheus /etc/prometheus/prometheus.yml
 
 #setup systemd by adding below lines to file /etc/systemd/system/prometheus.service
 
@@ -107,11 +101,7 @@ ExecStart=/usr/local/bin/prometheus \
 
 --config.file /etc/prometheus/prometheus.yml \
 
---storage.tsdb.path /var/lib/prometheus/ \
-
---web.console.templates=/etc/prometheus/consoles \
-
---web.console.libraries=/etc/prometheus/console_libraries
+--storage.tsdb.path /var/lib/prometheus/
 
 [Install]
 
@@ -128,7 +118,11 @@ sudo systemctl start prometheus
 
 ### Step 2: Once started, verified the Prometheus service using below command:
 
-`sudo service prometheus status`
+`sudo systemctl status prometheus`
+
+> **Note:** these labs use the **Prometheus 3.x LTS** line. The legacy console template
+> flags (`--web.console.templates` / `--web.console.libraries`) are no longer used.
+> Check <https://github.com/prometheus/prometheus/releases> for the latest LTS release.
 
 ![image](https://user-images.githubusercontent.com/37858762/236439180-c28abe6e-a92f-4900-bbe2-976517afec69.png)
 
@@ -189,13 +183,13 @@ scrape_configs:
 ### Step 1: Install Node exporter using below commands:
 
 ```
-NODE_EXPORTER_VERSION="1.5.0"
+NODE_EXPORTER_VERSION="1.9.1"
 
 wget https://github.com/prometheus/node_exporter/releases/download/v${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz
 
-tar -xzvf node_exporter-${node_exporter_VERSION}.linux-amd64.tar.gz
+tar -xzvf node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64.tar.gz
 
-cd node_exporter-${node_exporter_VERSION}.linux-amd64
+cd node_exporter-${NODE_EXPORTER_VERSION}.linux-amd64
 
 sudo cp node_exporter /usr/local/bin
 
@@ -256,11 +250,12 @@ static_configs:
 
 ![image](https://user-images.githubusercontent.com/37858762/236439047-ae697483-f42d-48ee-b97d-725ac40d9d43.png)
 
-### Step 2: Save the config file and restart Prometheus process with below command:
+### Step 2: Save the config file and reload the Prometheus configuration with below command:
 
-`ps aux | grep prometheus`
+`sudo systemctl reload prometheus`
 
-`sudo kill -HUP <PID>`
+_(`systemctl reload` sends SIGHUP to the process. If you prefer the manual route:
+`ps aux | grep prometheus` then `sudo kill -HUP <PID>`.)_
 
 ![image](https://user-images.githubusercontent.com/37858762/236439001-c486398f-a03f-46d1-99cc-87f44cd6fc4d.png)
 
@@ -364,7 +359,7 @@ topk(3,sum(rate(node_cpu_seconds_total[5m])) by (app))
 ### Step 1: Now, lets setup alert manager using below commands:
 
 ```
-ALERTMANAGER_VERSION="0.24.0"
+ALERTMANAGER_VERSION="0.28.1"
 
 wget https://github.com/prometheus/alertmanager/releases/download/v${ALERTMANAGER_VERSION}/alertmanager-${ALERTMANAGER_VERSION}.linux-amd64.tar.gz
 
@@ -446,7 +441,7 @@ receivers:
   email_configs:
   - to: 'operations-team+alerts@example.org'  ## <CHANGE  THIS TO YOUR OR RECEIVER EMAIL>
   slack_configs:
-  - api_url: https://hooks.slack.com/services/<WORKSPACE_ID>/<CHANNEL_ID>/<TOKEN> ## <CHANGE THIS LINE WITH YOUR SLACK HOOK URL>
+  - api_url: https://hooks.slack.com/services/<WORKSPACE_ID>/<CHANNEL_ID>/<TOKEN> ## <CHANGE THIS LINE WITH YOUR OWN SLACK HOOK URL - NEVER COMMIT A REAL WEBHOOK>
     channel: '#devops'  ## <CHANGE THIS TO YOUR SLACK CHANNEL NAME>
     send_resolved: true
 
@@ -475,8 +470,8 @@ groups:
       summary: Machine under heavy load
 
 # Restart both Alert manager and Prometheus services.
-sudo service alertmanager restart
-sudo service prometheus restart
+sudo systemctl restart alertmanager
+sudo systemctl restart prometheus
 ```
 
 ### Step 2: Your files should looks like below:
@@ -533,21 +528,28 @@ sudo service prometheus restart
 
 ## _Monitor a Python Application with Prometheus Client Library_
 
-### Step 1: As pre-requisites install docker and docker-compose on the server using below commands:
+### Step 1: As pre-requisites install docker and the Docker Compose plugin on the server using below commands:
 
-_Use below command to install docker and docker-compose_
+_Use below command to install docker and the compose plugin_
 
 ```
-curl -fsSL get.docker.com -o get-docker.sh
+curl -fsSL https://get.docker.com -o get-docker.sh
 
 sudo sh get-docker.sh
 
-sudo curl -L https://github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+# Compose v2 ships as a Docker CLI plugin. The standalone docker-compose v1 binary is EOL.
+sudo apt-get update
+sudo apt-get install -y docker-compose-plugin
 
-sudo chmod +x /usr/local/bin/docker-compose
+sudo usermod -aG docker $USER
 ```
 
-### Step 2: Verify if docker and docker-compose installed successfully:
+### Step 2: Verify if docker and docker compose installed successfully:
+
+```
+docker --version
+docker compose version
+```
   
 ![image](https://user-images.githubusercontent.com/37858762/236437585-de086ae8-0e67-42f0-9140-3ecc8989ddd6.png)
 
@@ -560,9 +562,9 @@ git clone https://github.com/vistasunil/prometheus_python_app.git
 
 cd prometheus_python_app
 
-# Bring the application up using docker-compose
+# Bring the application up using docker compose
 
-sudo docker-compose up -d
+sudo docker compose up -d
 
 # You can build your docker image and use in docker-compose file using the provided Dockerfile using below command
 # sudo docker build . -t <image_name>
@@ -576,7 +578,7 @@ sudo docker ps
 curl localhost:5000
 ```
 
-### Step 4: Output of application startup using docker-compose.
+### Step 4: Output of application startup using docker compose.
 
 ![image](https://user-images.githubusercontent.com/37858762/236437543-9692823c-8911-4ae7-a654-e959fb922f6e.png)
 
@@ -642,9 +644,18 @@ flask_request_latency_seconds_count
 ### Step 1: Install Grafana using below commands:
 
 ```
-sudo sh -c 'echo deb https://packages.grafana.com/oss/deb stable main > /etc/apt/sources.list.d/grafana.list'
+# Pre-requisites
+sudo apt-get update
+sudo apt-get install -y apt-transport-https software-properties-common wget
 
-sudo curl https://packages.grafana.com/gpg.key | sudo apt-key add -
+# Import the Grafana GPG key into a keyring (apt-key has been removed from APT)
+sudo mkdir -p /etc/apt/keyrings/
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | \
+  sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+
+# Add the Grafana OSS repository
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/grafana.list
 
 sudo apt-get update
 
@@ -652,12 +663,13 @@ sudo apt-get -y install grafana
 
 sudo systemctl daemon-reload
 
-sudo systemctl start grafana-server
-
-sudo systemctl enable grafana-server.service
+sudo systemctl enable --now grafana-server
 
 sudo systemctl status grafana-server
 ```
+
+> **Note:** `apt-key` has been removed from APT and the old `packages.grafana.com` host is
+> retired - the keyring + `apt.grafana.com` method above is the supported way on Ubuntu 26.04.
 
 ![image](https://user-images.githubusercontent.com/37858762/236436875-8831458f-0ea7-4bba-a5c8-dceb980c7c65.png)
 
@@ -940,9 +952,9 @@ providers:
 
 ### Step 9: Restart Grafana service using below command and verify its running after restart:
 
-`sudo service grafana-server restart`
+`sudo systemctl restart grafana-server`
 
-`sudo service grafana-server status`
+`sudo systemctl status grafana-server`
 
 ![image](https://user-images.githubusercontent.com/37858762/236436735-fe43628e-7b5b-4f2f-83ec-3198dedf57f3.png)
 
